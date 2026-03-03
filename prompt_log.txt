@@ -1,6 +1,757 @@
-## Student Name:
-## Student ID: 
+## Student Name: Noah Vukosa
+## Student ID: 214415525
 
-Prompt #1: {}
-Response #1: {}
+Prompt #1: {In my software engineering requirements lab I have been tasked with developing a system that to manage registration for a single event with fixed capacity. The system must register users until capacity is reached, place additional users into a FIFO waitlist, promote earliest waitlisted users when a registered user cancels, prevent duplicate registrations and allow users to query their status. I'm going to provide you with the functional requirements, constraints and acceptance criteria for this system. Before we get to generating code, can you identify any ambiguities or missing clarifications that exist?        Functional Requirements: The system shall register a user for the event if the total number of users registered for the event is below capacity.
+
+The system shall place a user on the waitlist if attempted registration for that user occurs when the total number of users registered for the event is at capacity
+
+The system shall accept a capacity greater than or equal to 0
+
+The system shall allow operator to cancel a user: remove the user if they are registered or remove the user from waitlist if they are on the waitlist
+
+The system shall promote the earliest waitlisted user when a registered user cancels.
+
+The system shall allow user to query their current status
+
+The system shall report the 1-based position of user on the waitlist when a waitlisted user queries their status
+
+The system shall maintain first-in, first-out ordering in the waitlist.
+
+The system must ensure the number of registered users never exceeds capacity.
+
+The system shall service users in the order their requests arrived in.
+
+The system must produce the same final state given the same sequence of operations
+
+The system shall reject a registration request if the user is already registered or already on the waitlist
+
+If a cancellation is requested for a user who is neither registered or on the waitlist, the system shall prevent this operation 
+
+Constraints: 1. Capacity must be greater than or equal to 0
+
+2. user_id must be a non-empty string
+
+3. Waitlist must follow FIFO ordering where only the earliest waitlisted user can be promoted and latest users added to waitlist are added to the end of waitlist.
+
+4. Promotions must occur deterministically under identical operation sequences
+
+5. A user that is already registered or on the waitlist must not be allowed to register again
+
+6. No users should be able to be registered when total number of registered users is equal to capacity (number of registered users must never exceed capacity)
+
+7. A user must only exist in "registered" or "waitlist" state, never both
+
+8. Only users currently in the system can be cancelled
+
+9. User must not appear in the system more than once
+Invariants: 1. A user may not appear more than once in the system
+
+2.A user may not simultaneously exist in multiple states
+
+3. The number of registered users must never exceed capacity
+
+4. A user's user_id must remain the same throughout system execution.
+
+5.  The system state must remain consistent after every operation
+
+6. The system must maintain FIFO ordering of the waitlist throughout operation Acceptance Criteria AC1:
+Given: EventRegistration system being initialized 
+When operator sets capacity to integer less than 0
+Then system shall prevent capacity from being set and prompt operator for capacity greater than or equal to 0
+Linked Constraint ID(s): C#1
+
+AC2
+Given: User is earliest waitlisted user
+When user is promoted from waitlist
+Then system shall remove the user from the waitlist and change the user's state from "waitlisted" to "registered"
+Linked Constraint ID(s): C#3, C$5. C#7, C#9
+
+AC3
+Given: User is already registered or on the waitlist
+When user attempts to register again
+Then system shall prevent user from registering again and throw a DuplicateRequest Error
+Linked Constraint ID(s): C#5, C#9
+
+AC4
+Given: Total number of registered users is equal to capacity
+When a user attempts to register
+Then system shall put the user at the end of the waitlist
+Linked Constraint ID(s): C#3, C#6
+
+AC5
+
+Given: User is on the waitlist
+When the user is cancelled
+Then system shall remove the user from the system while maintaining the first-in, first-out order of the waitlist
+Linked Constraint ID(s): C#3
+
+AC6
+
+Given: Multiple users attempt to register
+When the capacity is already full
+Then system shall add each user to the waitlist in the order their registration attempts were received
+Linked Constraint ID(s): C#3, C#4, C#6
+
+AC7
+
+Given: New user is registering
+When the user enters an empty string user_id
+Then system shall reject the user's registration
+Linked Constraint ID(s): C#2
+
+AC8
+
+Given: EventRegistration system is active
+When more than one user requests are received with exact same timestamp
+Then system shall service the user requests in lexicographic order of their user_ids
+Linked Constraint ID(s): C#4
+
+AC9
+
+Given: Number of registered users is equal to capacity and users are on the waitlist
+When a user on the waitlist cancels
+Then system shall not promote any user from the waitlist
+Linked Constraint ID(s): C#6
+
+AC10
+Given: When a user does not exist in the system
+When that user attempts to cancel
+Then system shall preserve system state and throw a NotFound error
+Linked Constraint ID(s): C#8}
+Response #1: {This is a very solid requirements draft — it’s much clearer than most student specs. That said, there are several ambiguities, hidden assumptions, and potential conflicts that you should clarify before implementation.
+
+I’ll group them into categories so it’s easy to refine your spec.
+
+🔎 1. Identity & User Definition Ambiguities
+1.1 What defines a unique user?
+
+You say:
+
+user_id must be a non-empty string
+
+Users must not appear more than once
+
+But unclear:
+
+Is user_id case-sensitive?
+
+Is "Alice" the same as "alice"?
+
+Are leading/trailing spaces allowed?
+
+Is "Bob" the same as " Bob "?
+
+Are Unicode characters allowed?
+
+You should clarify:
+
+user_id comparison shall be case-sensitive/insensitive and whitespace-normalized/not normalized.
+
+🔎 2. Registration & Capacity Edge Cases
+2.1 Capacity = 0 behavior
+
+Capacity is allowed to be 0.
+
+If capacity = 0:
+
+Are all users immediately waitlisted?
+
+Is registration technically possible?
+
+Is waitlist allowed when capacity is 0?
+
+Your current logic implies:
+
+Yes → everyone goes to waitlist.
+But this should be explicitly stated.
+
+2.2 Can capacity change after initialization?
+
+AC1 implies capacity is set at initialization.
+
+But unclear:
+
+Can operator change capacity later?
+
+If capacity increases:
+
+Should waitlisted users be promoted immediately?
+
+If capacity decreases:
+
+What happens if registered users exceed new capacity?
+
+Right now, this is undefined.
+
+🔎 3. Timestamp & Ordering Ambiguity (AC8)
+
+AC8 says:
+
+If requests have exact same timestamp → service lexicographically by user_id
+
+This introduces multiple ambiguities:
+
+3.1 What defines "same timestamp"?
+
+Millisecond precision?
+
+System clock?
+
+Supplied externally?
+
+3.2 What if:
+
+Same timestamp
+
+Same user_id?
+
+Is that:
+
+A duplicate?
+
+Undefined?
+
+3.3 Conflict With FIFO Rule
+
+You state:
+
+System shall service users in order their requests arrived.
+
+But AC8 overrides this with lexicographic ordering.
+
+That means FIFO is not purely arrival-based — it's:
+
+Arrival time primary key
+User_id secondary key
+
+That should be clarified formally.
+
+🔎 4. Cancellation & Promotion Ambiguities
+4.1 Promotion Timing
+
+When a registered user cancels:
+
+Does promotion happen immediately?
+
+Is it part of the same atomic operation?
+
+Or is promotion triggered separately?
+
+This matters for:
+
+Determinism
+
+Concurrency handling
+
+Acceptance testing
+
+You should define:
+
+Cancellation of a registered user shall atomically remove the user and promote the earliest waitlisted user (if any exists).
+
+4.2 What if:
+
+Multiple cancellations occur?
+
+Cancellation occurs while waitlist empty?
+
+You imply behavior but do not explicitly state:
+
+If waitlist empty → no promotion occurs.
+
+If multiple registered users cancel → promote same number from waitlist?
+
+Clarify explicitly.
+
+🔎 5. Query Status Ambiguity
+
+You say:
+
+System shall allow user to query their current status.
+
+But what are valid return values?
+
+Should be explicitly defined:
+
+"REGISTERED"
+
+"WAITLISTED (position N)"
+
+"NOT_FOUND"
+
+Right now this is implied but not defined.
+
+🔎 6. Error Handling Ambiguities
+
+You define:
+
+DuplicateRequest error
+
+NotFound error
+
+But unclear:
+
+Are these exceptions?
+
+Error codes?
+
+Return values?
+
+Do errors change state? (you imply no)
+
+Also:
+
+Is trying to register with empty user_id an error type?
+
+What error name?
+
+🔎 7. Determinism & Concurrency Ambiguity
+
+You state:
+
+Must produce same final state given same sequence of operations.
+
+But:
+
+Is the system single-threaded?
+
+Can multiple requests occur simultaneously?
+
+Is there locking?
+
+AC8 implies concurrency.
+
+If concurrent:
+
+What defines "sequence of operations"?
+
+Is ordering externally imposed?
+
+Is there a global request queue?
+
+Right now determinism depends on something undefined.
+
+🔎 8. Promotion Logic Edge Case
+
+Consider:
+
+Capacity = 2
+Registered = [A, B]
+Waitlist = [C, D]
+
+Cancel A
+→ C promoted
+
+Cancel B
+→ D promoted
+
+All good.
+
+But what about:
+
+Capacity = 2
+Registered = [A, B]
+Waitlist = [C]
+
+Cancel A
+→ C promoted
+
+Cancel B
+→ ???
+
+Registered = [C]
+
+Should remain under capacity (correct).
+
+You should explicitly state:
+
+If no waitlisted user exists at time of cancellation, no promotion occurs.
+
+🔎 9. Definition of “System State Consistency”
+
+Invariant says:
+
+System state must remain consistent after every operation
+
+But consistency is not formally defined.
+
+You could clarify:
+
+System state is consistent if:
+
+Registered count ≤ capacity
+
+No duplicates
+
+Waitlist order preserved
+
+Users in exactly one state
+
+All constraints satisfied
+
+🔎 10. Implicit Missing Functional Requirements
+
+These are assumed but not explicitly stated:
+
+10.1 Does the system expose:
+
+List of registered users?
+
+List of waitlisted users?
+
+Only status by user_id?
+
+Currently only status query is defined.
+
+10.2 Is registration atomic?
+
+If promotion occurs during cancellation,
+Is the entire operation atomic?
+
+This matters for:
+
+Determinism
+
+Multi-user timing
+
+AC8 correctness
+
+🔎 11. Minor Logical Overlaps / Redundancies
+
+You repeat:
+
+No duplicate users (FR + Constraint + Invariant)
+
+FIFO ordering (FR + Constraint + Invariant)
+
+Registered ≤ capacity (FR + Constraint + Invariant)
+
+This is not wrong, but in a formal spec:
+
+Invariants should not restate constraints unless necessary.
+
+Functional requirements should not duplicate constraints.
+
+Cleaner layering:
+
+Constraints → input validity
+
+Functional requirements → behavior
+
+Invariants → always-true state properties
+
+🔎 12. Undefined Behavior: Registration + Cancellation at Same Timestamp
+
+If:
+
+User A cancels
+
+User B registers
+
+Same timestamp
+
+Which happens first?
+
+AC8 only resolves ordering among registrations.
+It does not define ordering across operation types.
+
+You need:
+
+When multiple operations share the same timestamp, operations shall be ordered first by timestamp, then by operation type priority (if any), then by lexicographic user_id.
+
+Or state:
+
+All requests are processed sequentially in a total order determined externally.
+
+🔎 13. What Is an “Operator”?
+
+You say:
+
+System shall allow operator to cancel a user.
+
+But:
+
+Can users cancel themselves?
+
+Is operator different role?
+
+Is there authentication?
+
+Or is "operator" just API caller?
+
+This is ambiguous.
+
+📌 Summary of Major Ambiguities To Fix
+
+Here are the most important ones to clarify:
+
+Case sensitivity of user_id
+
+Capacity change after initialization
+
+Definition of timestamp & tie-breaking
+
+Ordering across different operation types
+
+Atomicity of cancellation + promotion
+
+Explicit query return values
+
+Behavior when capacity = 0
+
+Concurrency model (single-threaded vs concurrent)
+
+Explicit error model
+
+🏁 Overall Assessment
+
+Your specification is:
+
+Logically consistent ✔
+
+Deterministic in intention ✔
+
+Very well-structured ✔
+
+But underspecified in ordering semantics and concurrency ❗
+
+Before coding, I strongly recommend you:
+
+Add a formal definition of request ordering.
+
+Define the API precisely (inputs/outputs/errors).
+
+Define atomicity rules.
+
+If you'd like, I can next:
+
+🔍 Rewrite this into a fully formal, unambiguous specification
+
+📊 Convert it into state machine form
+
+🧠 Identify minimal data structures needed
+
+🧪 Derive a comprehensive edge-case test suite
+
+🏗 Help refine it for grading rubrics in a software engineering lab
+
+Just tell me which direction you'd like to go.}
 --------------------------------------------------
+Purpose: To describe problem to LLM, provide it with functional requirements, constraints, acceptance criteria and ask it to identify any ambiguities.
+Short Summary: Identified several ambiguities including Case sensitivity of user_id, Capacity change after initialization, Definition of timestamp & tie-breaking, Ordering across different operation types, Atomicity of cancellation + promotion. Explicit query return values, Behavior when capacity = 0, Concurrency model (single-threaded vs concurrent), Explicit error model
+Decision: Will take into account the presented ambiguities and add necessary constraints, functional requirements and acceptance criteria
+
+Prompt #2:{I will provide the codebase and maybe that can help clarify any ambiguities you presented. Here is the main solution skeleton: ## Student Name:
+## Student ID:
+
+"""
+Task B: Event Registration with Waitlist (Stub)
+In this lab, you will design and implement an Event Registration with Waitlist system using an LLM assistant as your primary programming collaborator. 
+You are asked to implement a Python module that manages registration for a single event with a fixed capacity. 
+The system must:
+•	Accept a fixed capacity.
+•	Register users until capacity is reached.
+•	Place additional users into a FIFO waitlist.
+•	Automatically promote the earliest waitlisted user when a registered user cancels.
+•	Prevent duplicate registrations.
+•	Allow users to query their current status.
+
+The system must ensure that:
+•	The number of registered users never exceeds capacity.
+•	Waitlist ordering preserves FIFO behavior.
+•	Promotions occur deterministically under identical operation sequences.
+
+The module must preserve the following invariants:
+•	A user may not appear more than once in the system.
+•	A user may not simultaneously exist in multiple states.
+•	The system state must remain consistent after every operation.
+
+The system must correctly handle non-trivial scenarios such as:
+•	Multiple cancellations in sequence.
+•	Users attempting to re-register after canceling.
+•	Waitlisted users canceling before promotion.
+•	Capacity equal to zero.
+•	Simultaneous or rapid consecutive operations.
+•	Queries during state transitions.
+
+The output consists of the updated registration state and ordered lists of registered and waitlisted users after each operation.
+"""
+
+from dataclasses import dataclass
+from typing import List, Optional
+
+
+class DuplicateRequest(Exception):
+    """Raised if a user tries to register but is already registered or waitlisted."""
+    pass
+
+
+class NotFound(Exception):
+    """Raised if a user cannot be found for cancellation (if required by handout)."""
+    pass
+
+
+@dataclass(frozen=True)
+class UserStatus:
+    """
+    state:
+      - "registered"
+      - "waitlisted"
+      - "none"
+    position: 1-based waitlist position if waitlisted; otherwise None
+    """
+    state: str
+    position: Optional[int] = None
+
+
+class EventRegistration:
+    """
+    Students must implement this class per the lab handout.
+    Deterministic ordering is required (e.g., FIFO waitlist, predictable registration order).
+    """
+
+    def __init__(self, capacity: int) -> None:
+        """
+        Args:
+            capacity: maximum number of registered users (>= 0)
+        """
+        # TODO: Initialize internal data structures
+        raise NotImplementedError("EventRegistration.__init__ not implemented yet")
+
+    def register(self, user_id: str) -> UserStatus:
+        """
+        Register a user:
+          - if capacity available -> registered
+          - else -> waitlisted (FIFO)
+
+        Raises:
+            DuplicateRequest if user already exists (registered or waitlisted)
+        """
+        # TODO: Implement per lab handout
+        raise NotImplementedError("register not implemented yet")
+
+    def cancel(self, user_id: str) -> None:
+        """
+        Cancel a user:
+          - if registered -> remove and promote earliest waitlisted user (if any)
+          - if waitlisted -> remove from waitlist
+          - behavior when user not found depends on handout (raise NotFound or ignore)
+
+        Raises:
+            NotFound (if required by handout)
+        """
+        # TODO: Implement per lab handout
+        raise NotImplementedError("cancel not implemented yet")
+
+    def status(self, user_id: str) -> UserStatus:
+        """
+        Return status of a user:
+          - registered
+          - waitlisted with position (1-based)
+          - none
+        """
+        # TODO: Implement per lab handout
+        raise NotImplementedError("status not implemented yet")
+
+    def snapshot(self) -> dict:
+        """
+        (Optional helper for debugging/tests)
+        Return a deterministic snapshot of internal state.
+        """
+        # TODO: Implement if required/allowed
+        raise NotImplementedError("snapshot not implemented yet") (since snapshot is a helper function ignore it for requirements) and the test code (i will add more tests): import pytest
+
+from solution import EventRegistration, UserStatus, DuplicateRequest, NotFound
+
+
+def test_register_until_capacity_then_waitlist_fifo_positions():
+    er = EventRegistration(capacity=2)
+
+    s1 = er.register("u1")
+    s2 = er.register("u2")
+    s3 = er.register("u3")
+    s4 = er.register("u4")
+
+    assert s1 == UserStatus("registered")
+    assert s2 == UserStatus("registered")
+    assert s3 == UserStatus("waitlisted", 1)
+    assert s4 == UserStatus("waitlisted", 2)
+
+    snap = er.snapshot()
+    assert snap["registered"] == ["u1", "u2"]
+    assert snap["waitlist"] == ["u3", "u4"]
+
+
+def test_cancel_registered_promotes_earliest_waitlisted_fifo():
+    er = EventRegistration(capacity=1)
+    er.register("u1")
+    er.register("u2")  # waitlist
+    er.register("u3")  # waitlist
+
+    er.cancel("u1")  # should promote u2
+
+    assert er.status("u1") == UserStatus("none")
+    assert er.status("u2") == UserStatus("registered")
+    assert er.status("u3") == UserStatus("waitlisted", 1)
+
+    snap = er.snapshot()
+    assert snap["registered"] == ["u2"]
+    assert snap["waitlist"] == ["u3"]
+
+
+def test_duplicate_register_raises_for_registered_and_waitlisted():
+    er = EventRegistration(capacity=1)
+    er.register("u1")
+    with pytest.raises(DuplicateRequest):
+        er.register("u1")
+
+    er.register("u2")  # waitlisted
+    with pytest.raises(DuplicateRequest):
+        er.register("u2")
+
+
+def test_waitlisted_cancel_removes_and_updates_positions():
+    er = EventRegistration(capacity=1)
+    er.register("u1")
+    er.register("u2")  # waitlist pos1
+    er.register("u3")  # waitlist pos2
+
+    er.cancel("u2")    # remove from waitlist
+
+    assert er.status("u2") == UserStatus("none")
+    assert er.status("u3") == UserStatus("waitlisted", 1)
+
+    snap = er.snapshot()
+    assert snap["registered"] == ["u1"]
+    assert snap["waitlist"] == ["u3"]
+
+
+def test_capacity_zero_all_waitlisted_and_promotion_never_happens():
+    er = EventRegistration(capacity=0)
+    assert er.register("u1") == UserStatus("waitlisted", 1)
+    assert er.register("u2") == UserStatus("waitlisted", 2)
+
+    # No one can ever be registered when capacity=0
+    assert er.status("u1") == UserStatus("waitlisted", 1)
+    assert er.status("u2") == UserStatus("waitlisted", 2)
+    assert er.snapshot()["registered"] == []
+
+    # Cancel unknown should raise NotFound
+    with pytest.raises(NotFound):
+        er.cancel("missing") }
+----------------------------------
+Purpose: Provide codebase to further clarify any ambiguities
+Response: Provided the following 6 clarifications needed -> Constructor behavior when capacity < 0
+
+Empty string registration behavior
+
+Case sensitivity of user_id
+
+Explicit statement that system is sequential (no concurrency)
+
+Explicit rule for ordering of registered users after promotion
+
+Re-registration after cancellation allowed?
+
+
+
