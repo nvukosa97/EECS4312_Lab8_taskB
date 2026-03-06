@@ -89,9 +89,10 @@ def test_capacity_zero_all_waitlisted_and_promotion_never_happens():
 # Add your own additional tests here to cover more cases and edge cases as needed.
 #################################################################################
 
-# =========================
-# AC1: Capacity < 0 rejected
-# =========================
+
+# ================================
+# AC1: Capacity less than 0 rejected
+# ================================
 
 def test_ac1_negative_capacity_raises_value_error():
 
@@ -102,141 +103,152 @@ def test_ac1_negative_capacity_raises_value_error():
 # AC2: Earliest waitlisted promoted correctly
 # =========================
 def test_ac2_promotion_moves_user_to_end_of_registered_fifo():
+
     er = EventRegistration(capacity=2)
 
     er.register("u1")
     er.register("u2")
-    er.register("u3")  # waitlist pos1
-    er.register("u4")  # waitlist pos2
+    er.register("u3")
+    er.register("u4")
 
-    er.cancel("u1")  # should promote u3
+    er.cancel("u1")
 
     snap = er.snapshot()
 
     assert snap["registered"] == ["u2", "u3"]
     assert snap["waitlist"] == ["u4"]
     assert er.status("u3") == UserStatus("registered")
+    
 
 # =========================
-# AC3: Duplicate register rejected
+# AC3:  Duplicate register rejected
 # =========================
 def test_ac3_duplicate_register_registered_and_waitlisted():
-    er = EventRegistration(capacity=1)
-
-    er.register("userA")
+    e_r = EventRegistration(capacity=1)
+    e_r.register("userA")    
+    with pytest.raises(DuplicateRequest):
+        e_r.register("userA")
+    
+    e_r.register("userB")
 
     with pytest.raises(DuplicateRequest):
-        er.register("userA")
-
-    er.register("userB")  # waitlist
-
-    with pytest.raises(DuplicateRequest):
-        er.register("userB")
+        e_r.register("userB")
 
 # =========================
 # AC4: At capacity -> user added to end of waitlist
 # =========================
+
 def test_ac4_register_when_full_goes_to_end_of_waitlist():
-    er = EventRegistration(capacity=1)
+    e_r= EventRegistration(capacity=1)
 
-    er.register("u1")
-    er.register("u2")
-    er.register("u3")
+    e_r.register("u1")
+    e_r.register("u2")
+    e_r.register("u3")
 
-    snap = er.snapshot()
+    snap = e_r.snapshot()
+
     assert snap["registered"] == ["u1"]
     assert snap["waitlist"] == ["u2", "u3"]
 
 # =========================
 # AC5: Waitlisted cancel preserves FIFO order
+
 def test_ac5_cancel_waitlisted_preserves_fifo():
-    er = EventRegistration(capacity=1)
+    e_r = EventRegistration(capacity=1)
 
-    er.register("u1")
-    er.register("u2")
-    er.register("u3")
-    er.register("u4")
+    e_r.register("u1")
+    e_r.register("u2")
+    e_r.register("u3")
+    e_r.register("u4")
 
-    er.cancel("u3")
+    e_r.cancel("u3")
 
-    snap = er.snapshot()
+    snap = e_r.snapshot()
     assert snap["waitlist"] == ["u2", "u4"]
-    assert er.status("u3") == UserStatus("none")
+    assert e_r.status("u3")== UserStatus("none")
 
 
 # =========================
 # AC6: Multiple users added FIFO when full
 # =========================
+
 def test_ac6_multiple_waitlist_fifo_order():
-    er = EventRegistration(capacity=1)
-    er.register("u1")
+    e_r = EventRegistration(capacity=1)
 
-    er.register("a2")
-    er.register("u3")
-    er.register("u4")
+    e_r.register("u1")
+    
+    e_r.register("a2")
+    e_r.register("u3")
+    e_r.register("u4")
+    
+    snap = e_r.snapshot()
 
-    snap = er.snapshot()
     assert snap["waitlist"] == ["a2", "u3", "u4"]
 
 # =========================
 # AC7: Empty string registration is rejected
 # =========================
+
 def test_ac7_empty_user_id_rejected():
-    er = EventRegistration(capacity=1)
+
+    e_r = EventRegistration(capacity=1)
 
     with pytest.raises(ValueError):
-        er.register("")
-
+        e_r.register("")
 
 # =========================
 # AC9: Cancel waitlisted when full results in no promotion
 # =========================
 def test_ac9_cancel_waitlisted_does_not_trigger_promotion():
-    er = EventRegistration(capacity=1)
 
-    er.register("u1")
-    er.register("u2")
-    er.register("u3")
+    e_r = EventRegistration(capacity=1)
 
-    er.cancel("u2")  # cancel waitlisted user
+    e_r.register("a1")
+    e_r.register("a2")
+    e_r.register("a3")
 
-    snap = er.snapshot()
+    e_r.cancel("a2")
 
-    assert snap["registered"] == ["u1"]
-    assert snap["waitlist"] == ["u3"]
+    snap = e_r.snapshot()
+
+    assert snap["registered"] == ["a1"]
+    assert snap["waitlist"] == ["a3"]
 
 # =========================
-# AC10: Cancel non-existent user raises NotFound
-def test_ac10_cancel_nonexistent_user_raises_notfound():
-    er = EventRegistration(capacity=1)
+# AC10: Cancelling non-existent user raises NotFound
 
-    er.register("u1")
+def test_ac10_cancel_nonexistent_user_raises_notfound():
+    e_reg = EventRegistration(capacity=1)
+
+    e_reg.register("Reginald")
 
     with pytest.raises(NotFound):
-        er.cancel("ghost")
-
-    # Ensure state unchanged
-    snap = er.snapshot()
-    assert snap["registered"] == ["u1"]
+        e_reg.cancel("Drake")
+    
+    snap = e_reg.snapshot()
+    assert snap["registered"] == ["Reginald"]
 
 # =========================
-# AC11: Case-insensitive duplicate rejected
+# AC11: Case insensitive duplicate rejected
 # =========================
+
 def test_ac11_case_insensitive_duplicate():
-    er = EventRegistration(capacity=1)
-
-    er.register("UserA")
-    with pytest.raises(DuplicateRequest):
-        er.register("usera")
+    e_r = EventRegistration(capacity=1)
+    
+    e_r.register("OrvillePeck")
 
     with pytest.raises(DuplicateRequest):
-        er.register("USERA")
+        e_r.register("orvillePECK")
+    
+    with pytest.raises(DuplicateRequest):
+        e_r.register("ORVILLEPECK")
 
 # =========================
 # AC12: Capacity cannot be changed after initialization
 # =========================
+
 def test_ac12_capacity_immutable():
-    er = EventRegistration(capacity=2)
+    e_r = EventRegistration(capacity=3)
 
     with pytest.raises(AttributeError):
-        er.capacity = 5  # property has no setter
+        e_r.capacity = 8
