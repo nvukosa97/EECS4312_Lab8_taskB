@@ -412,3 +412,5 @@ Revision Note 2
 Update: Added AC9
 Reason: During requirement review LLM identified need for acceptance criteria to fully test C6
 Action: Clarified how simultaneous registration of 2 different users should be handled when capacity is 1 and 0 users are registered
+
+#Code passed all new tests

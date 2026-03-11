@@ -252,3 +252,208 @@ def test_ac12_capacity_immutable():
 
     with pytest.raises(AttributeError):
         e_r.capacity = 8
+
+####################
+# LAB9 TESTS
+#####################
+
+#Covers C1, AC1
+def test_ac1_cancel_registered_auto_promotes_earliest_waitlisted():
+    er = EventRegistration(capacity=1)
+    er.register("u1")
+    er.register("u2")
+    er.register("u3")
+
+    er.cancel("u1")
+
+    snap = er.snapshot()
+    assert snap["registered"] == ["u2"]
+    assert snap["waitlist"] == ["u3"]
+    assert er.status("u2") == UserStatus("registered")
+    assert er.status("u3") == UserStatus("waitlisted", 1)
+
+
+#Covers C2, AC2
+def test_ac2_cancel_shows_who_was_promoted_and_why(capsys):
+    er = EventRegistration(capacity=1)
+    er.register("u1")
+    er.register("u2")
+
+    capsys.readouterr()  # clear prior output
+    er.cancel("u1")
+    out = capsys.readouterr().out.strip()
+
+    assert "u1" in out
+    assert "u2" in out
+    assert "promoted" in out.lower()
+
+#Covers C3, AC3
+def test_ac3_cancel_promotion_message_under_100_chars(capsys):
+    er = EventRegistration(capacity=1)
+    er.register("Alice")
+    er.register("Bob")
+
+    capsys.readouterr()
+    er.cancel("Alice")
+    out = capsys.readouterr().out.strip()
+
+    assert "Alice"[:8] in out or "Alice" in out
+    assert "Bob"[:8] in out or "Bob" in out
+    assert len(out) <= 100
+
+#Covers C4, AC3
+def test_ac4_duplicate_register_outputs_explanation():
+    er = EventRegistration(capacity=1)
+    er.register("u1")
+
+    with pytest.raises(DuplicateRequest) as excinfo:
+        er.register("u1")
+
+    assert "already" in str(excinfo.value).lower() or "not registered" in str(excinfo.value).lower()
+
+#Covers C5, AC5
+def test_ac5_capacity_zero_places_all_users_on_waitlist_fifo():
+    er = EventRegistration(capacity=0)
+
+    s1 = er.register("u1")
+    s2 = er.register("u2")
+    s3 = er.register("u3")
+
+    assert s1 == UserStatus("waitlisted", 1)
+    assert s2 == UserStatus("waitlisted", 2)
+    assert s3 == UserStatus("waitlisted", 3)
+
+    snap = er.snapshot()
+    assert snap["registered"] == []
+    assert snap["waitlist"] == ["u1", "u2", "u3"]
+
+#Covers C6, AC6
+def test_ac6_simultaneous_different_users_processed_in_ascii_lexicographic_order():
+    er = EventRegistration(capacity=2)
+
+    er.begin_batch(timestamp=10)
+    er.register("Bob")
+    er.register("Alice")
+    er.register("Charlie")
+    er.end_batch()
+
+    snap = er.snapshot()
+    assert snap["registered"] == ["Alice", "Bob"]
+    assert snap["waitlist"] == ["Charlie"]
+
+#Covers C7, AC7
+def test_ac7_simultaneous_same_user_processed_register_then_cancel_then_query():
+    er = EventRegistration(capacity=1)
+
+    er.begin_batch(timestamp=20)
+    er.register("Mia")
+    er.cancel("Mia")
+    er.status("Mia")
+    results = er.end_batch()
+
+    assert results[0][0] == "register"
+    assert results[1][0] == "cancel"
+    assert results[2][0] == "query"
+    assert results[2][2] == UserStatus("none")
+    assert er.snapshot() == {"registered": [], "waitlist": []}
+
+
+#Covers C8, AC8
+def test_ac8_single_action_produces_at_most_one_output_message(capsys):
+    er = EventRegistration(capacity=1)
+
+    capsys.readouterr()
+    er.register("u1")
+    out = capsys.readouterr().out.strip().splitlines()
+
+    assert len(out) == 1
+
+#Covers C9, AC9
+def test_ac9_same_timestamp_bob_and_alice_alice_registered_bob_waitlisted():
+    er = EventRegistration(capacity=1)
+
+    er.begin_batch(timestamp=99)
+    er.register("Bob")
+    er.register("Alice")
+    results = er.end_batch()
+
+    snap = er.snapshot()
+    assert snap["registered"] == ["Alice"]
+    assert snap["waitlist"] == ["Bob"]
+
+    assert results[0][0] == "register"
+    assert results[0][1] == "Alice"
+    assert results[0][2] == UserStatus("registered")
+
+    assert results[1][0] == "register"
+    assert results[1][1] == "Bob"
+    assert results[1][2] == UserStatus("waitlisted", 1)
+
+#Covers EC6
+def test_ec6_simultaneous_waitlist_cancellations_removed_in_lexicographic_order_preserving_remaining_fifo():
+    er = EventRegistration(capacity=1)
+    er.register("u1")
+    er.register("Charlie")
+    er.register("Bob")
+    er.register("Alice")
+
+    # initial waitlist order is arrival order
+    assert er.snapshot()["waitlist"] == ["Charlie", "Bob", "Alice"]
+
+    er.begin_batch(timestamp=4)
+    er.cancel("Bob")
+    er.cancel("Alice")
+    er.end_batch()
+
+    snap = er.snapshot()
+    assert snap["registered"] == ["u1"]
+    assert snap["waitlist"] == ["Charlie"]
+
+#Covers EC7
+def test_ec7_simultaneous_registered_cancellations_promote_waitlist_in_fifo_order():
+    er = EventRegistration(capacity=2)
+    er.register("u1")
+    er.register("u2")
+    er.register("w1")
+    er.register("w2")
+    er.register("w3")
+
+    er.begin_batch(timestamp=5)
+    er.cancel("u2")
+    er.cancel("u1")
+    er.end_batch()
+
+    snap = er.snapshot()
+    assert snap["registered"] == ["w1", "w2"]
+    assert snap["waitlist"] == ["w3"]
+
+#tests ec8
+def test_ec8_same_timestamp_cancel_and_register_different_users_deterministic_outcome():
+    er = EventRegistration(capacity=1)
+    er.register("M")
+    er.register("User1")   # earliest waitlist
+
+    er.begin_batch(timestamp=6)
+    er.cancel("M")
+    er.register("Zed")
+    er.end_batch()
+
+    snap = er.snapshot()
+    assert snap["registered"] == ["User1"]
+    assert snap["waitlist"] == ["Zed"]
+
+#Covers EC9
+def test_ec9_same_user_cancel_and_query_same_timestamp_query_returns_none():
+    er = EventRegistration(capacity=1)
+    er.register("u1")
+
+    er.begin_batch(timestamp=7)
+    er.cancel("u1")
+    er.status("u1")
+    results = er.end_batch()
+
+    assert results[0][0] == "cancel"
+    assert results[1][0] == "query"
+    assert results[1][2] == UserStatus("none")
+
+
