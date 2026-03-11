@@ -1,0 +1,203 @@
+Prompt 1: [can you help me brainstorm one more constraint derived from persona attributes? C1
+
+Persona: Jane 
+
+Persona attribute:
+
+Automatic handling of conflicts (e.g., reminder collisions or waitlist promotion).
+
+Attribute type:
+
+Need
+
+Operationalization:
+
+Converted into constraint. Interpret "automatic handling of conflicts" as the system resolving waitlist promotions automatically without requiring user intervention
+
+Derived Constraint:
+
+The system must automatically handle waitlist promotion without asking user for input
+
+Current Support Level:
+
+Fully supported by Lab 8 System
+
+C2
+
+Persona:
+
+Mo Rodriguez
+
+Persona attribute:
+
+Carefully reviews outputs and seeks explanations for system decisions
+
+Attribute type:
+
+Behaviour
+
+Operationalization:
+
+Converted into constraint. Interpret Mo's need to review outputs and seek explanations as requiring the system to provide explicit explanations for automated waitlist promotions
+
+Derived Constraint:
+
+The system shall show which user was promoted from waitlist and which user was removed from system when a waitlist promotion occurs
+
+Current Support Level:
+
+Not supported by Lab 8 System
+
+C3
+
+Persona:
+
+Jane
+
+Persona attribute:
+
+
+Prefers concise outputs and minimal interaction when making decisions
+
+Attribute type:
+
+Behaviour
+
+Operationalization:
+
+Converted into constraint. Interpret Jane's preference for concise output as requiring system to present only essential information
+
+Derived Constraint:
+
+The system shall only output messages with essential information using at most 100 characters
+
+Current Support Level:
+
+Partially supported by Lab 8 System
+
+
+
+C4
+
+Persona:
+
+Mo
+
+Persona attribute:
+
+
+
+Not understanding why the system changed or rejected an action
+
+Attribute type:
+
+Pain Point
+
+Operationalization:
+
+Converted into constraint. Interpret Mo's frustration with unexplained system behaviour as requiring the system to provide explicit explanations whenever user action is rejected/modified.
+
+Derived Constraint:
+
+The system shall provide an explanation whenever a user action (registration, cancellation, or query) was rejected
+
+Current Support Level:
+
+Fully Supported by Lab 8
+
+
+
+C5
+
+Persona: Mo
+
+Persona attribute: Explicitly handle edge cases instead of silent failure. 
+
+
+
+Attribute type: Need
+
+Operationalization: Converted into Constraint.  Interpreted Mo's need for system to explicitly handle edge cases as requiring system to handle capacity of 0.
+
+Derived Constraint: 
+
+The system must explicitly handle capacity set to 0 by placing users on waitlist and preventing registration
+
+Current Support Level:
+
+Fully supported by Lab 8
+
+C6
+
+Persona: Mo
+
+Persona attribute: Deterministic system behavior under ties or conflicting conditions.
+
+
+
+Attribute type: Need
+
+Operationalization: Converted into Constraint.  Interpreted Mo's need for deterministic system behavior under ties as requiring system to handle multiple user actions that occur at the same time.
+
+Derived Constraint: 
+
+The system must explicitly handle simultaneous user actions (different users) including registrations, cancellations and queries in a deterministic order
+
+Current Support Level:
+
+Not supported by Lab 8
+
+C7
+
+Persona: Jane
+
+Persona attribute: Predictable and stable ordering of reminders or system decisions
+
+
+
+Attribute type: Need
+
+Operationalization: Converted into Constraint.  Interpreted Jane's need for Predictable and stable ordering of system decisions as requiring system to handle multiple user actions for same user that occur at the same time in a deterministic order
+
+Derived Constraint: 
+
+The system must explicitly handle simultaneous user actions (same user id) including registrations, cancellations and queries in a deterministic order
+
+Current Support Level:
+
+Not supported by Lab 8
+PERSONA 1 - Jane Adams (Primary User)
+Context. Busy professional managing daily routines and commitments who relies on
+automation to reduce cognitive load. Jane uses digital tools for medication reminders
+and event registrations and expects them to work reliably without manual oversight.
+Behaviors.
+• Acts quickly and rarely revisits system suggestions.
+• Trusts the system to resolve conflicts and enforce rules automatically.
+• Prefers concise outputs and minimal interaction when making decisions.
+Needs.
+• Predictable and stable ordering of reminders or system decisions.
+• Automatic handling of conflicts (e.g., reminder collisions or waitlist promotion).
+• Limited notification or information overload.
+Pain Points.
+• Receiving too many notifications or duplicate system messages.
+• Systems behave inconsistently in similar situations.
+• Having to manually resolve conflicts or check system correctness.
+PERSONA 2 – Mo Rodriguez (Edge User)
+Context. User with accessibility needs & heightened sensitivity to uncertainty. Mo relies
+on explicit explanations and consistent behavior to build trust in automated systems.
+Behaviors.
+• Carefully reviews outputs and seeks explanations for system decisions.
+• Performs frequent updates (e.g., snoozing reminders or cancelling
+registrations).
+• Experiences stress when outcomes appear arbitrary or unexplained.
+Needs.
+• Deterministic system behavior under ties or conflicting conditions.
+• Clear explanations when reminders are moved, skipped, or when waitlist
+promotions occur.
+• Explicitly handle edge cases instead of silent failure.
+Pain Points.
+• Not understanding why the system changed or rejected an action.
+• Silent failures or dropped reminders/requests.
+• Inconsistent responses across repeated or boundary scenarios. system: design and implement an Event Registration with Waitlist system using an LLM assistant as your primary programming collaborator. You are asked to implement a Python module that manages registration for a single event with a fixed capacity. The system must:• Accept a fixed capacity.• Register users until capacity is reached.• Place additional users into a FIFO waitlist.• Automatically promote the earliest waitlisted user when a registered user cancels.• Prevent duplicate registrations.• Allow users to query their current status.The system must ensure that:• The number of registered users never exceeds capacity.• Waitlist ordering preserves FIFO behavior.• Promotions occur deterministically under identical operation sequences.The module must preserve the following invariants:• A user may not appear more than once in the system.• A user may not simultaneously exist in multiple states.• The system state must remain consistent after every operation.The system must correctly handle non-trivial scenarios such as:• Multiple cancellations in sequence.• Users attempting to re-register after canceling.• Waitlisted users canceling before promotion.• Capacity equal to zero.• Simultaneous or rapid consecutive operations.• Queries during state transitions.The output consists of the updated registration]
+Purpose: Brainstorm one more constraint
+Response summary: Gave multiple constraint suggestions, went with one that limits output messages to one

@@ -1,0 +1,391 @@
+## 1. Problem Understanding - Describe the problem your system solves.
+System purpose: Purpose of the system is to manage registration for a single event with fixed capacity. The system must register users until capacity is reached and place additional users into a FIFO waitlist such that when a registered user is cancelled, the earliest waitlisted user is promoted to the registered list.
+
+Inputs to the system:
+user_id: String of user's username. Format is a non-empty string
+
+capacity: Max value of users that can be registered for an event. Integer that is greater than or equal to 0
+
+
+
+Outputs produced by the system:
+UserStatus: Python object with 2 fields --> state: one of the following strings "registered", "waitlisted", "none" .  position: integer representing the 1-based waitlist position of user (integer must be at least 1 or greater) or None if user is not on waitlist
+
+NotFound Exception: Exception raises if user cannot be found for cancellation
+
+DuplicateRequest Exception: Exception raised if user tries to register but is already registered or on waitlist
+
+message: String output to stdout providing explanation of waitlist promotions
+
+Primary goal of the system:
+To automatically handle registration, cancellation, and waitlist promotions for a fixed capacity event with deterministic behaviour
+
+---
+## 2. Assumptions - List assumptions about the environment, users, or
+inputs.
+A1: User requests can occur simultaneously
+A2: user_id must have at least one character
+A3: Security/password protection is not a concern
+A4: Capacity cannot be changed for a system once initialized 
+A5: Waitlist has infinite capacity
+A6: user_id can contain any ascii characters
+---
+## 3. Functional Requirements - Describe the main behaviors the system
+must perform.
+
+**Assuming we only have to include new functional requirements derived from constraints (rest of FRs in form)
+
+FR16. The system shall service simultaneous user requests (same timestamp, different user ids) in lexicographic order using the ASCII values of their 
+
+FR17. The system shall service simultaneous user requests (same timestamp, same user ids) in order of following priority: Registration, Cancellation, Query
+
+FR18. The system shall show which user was promoted from waitlist and which user was removed from system when a waitlist promotion occurs
+
+FR19.  The system shall return query results that reflect the system state after all earlier simultaneous requests in the deterministic processing order and before any later simultaneous requests
+
+FR20.  The system shall produce the same registered list, waitlist, and outputs for any identical initial state (capacity) and identical sequence of requests, including simultaneous requests
+---
+## 4. System Constraints - Constraints are conditions the system must
+always respect. Each constraint should reference the persona attribute
+it originates from.
+C1
+
+Persona: Jane 
+
+Persona attribute:
+
+Automatic handling of conflicts (e.g., reminder collisions or waitlist promotion).
+
+Attribute type:
+
+Need
+
+Operationalization:
+
+Converted into constraint. Interpret "automatic handling of conflicts" as the system resolving waitlist promotions automatically without requiring user intervention
+
+Derived Constraint:
+
+The system must automatically handle waitlist promotion without asking user for input
+
+Current Support Level:
+
+Fully supported by Lab 8 System
+
+C2
+
+Persona:
+
+Mo Rodriguez
+
+Persona attribute:
+
+Carefully reviews outputs and seeks explanations for system decisions
+
+Attribute type:
+
+Behaviour
+
+Operationalization:
+
+Converted into constraint. Interpret Mo's need to review outputs and seek explanations as requiring the system to provide explicit explanations for automated waitlist promotions
+
+Derived Constraint:
+
+The system shall show which user was promoted from waitlist and which user was removed from system when a waitlist promotion occurs
+
+Current Support Level:
+
+Not supported by Lab 8 System
+
+C3
+
+Persona:
+
+Jane
+
+Persona attribute:
+
+
+Prefers concise outputs and minimal interaction when making decisions
+
+Attribute type:
+
+Behaviour
+
+Operationalization:
+
+Converted into constraint. Interpret Jane's preference for concise output as requiring system to present only essential information
+
+Derived Constraint:
+
+The system shall only output messages with essential information using at most 100 characters
+
+Current Support Level:
+
+Partially supported by Lab 8 System
+
+
+
+C4
+
+Persona:
+
+Mo
+
+Persona attribute:
+
+
+
+Not understanding why the system changed or rejected an action
+
+Attribute type:
+
+Pain Point
+
+Operationalization:
+
+Converted into constraint. Interpret Mo's frustration with unexplained system behaviour as requiring the system to provide explicit explanations whenever user action is rejected/modified.
+
+Derived Constraint:
+
+The system shall provide an explanation whenever a user action (registration, cancellation, or query) was rejected
+
+Current Support Level:
+
+Fully Supported by Lab 8
+
+
+
+C5
+
+Persona: Mo
+
+Persona attribute: Explicitly handle edge cases instead of silent failure. 
+
+
+
+Attribute type: Need
+
+Operationalization: Converted into Constraint.  Interpreted Mo's need for system to explicitly handle edge cases as requiring system to handle capacity of 0.
+
+Derived Constraint: 
+
+The system must explicitly handle capacity set to 0 by placing users on waitlist and preventing registration
+
+Current Support Level:
+
+Fully supported by Lab 8
+
+C6
+
+Persona: Mo
+
+Persona attribute: Deterministic system behavior under ties or conflicting conditions.
+
+
+
+Attribute type: Need
+
+Operationalization: Converted into Constraint.  Interpreted Mo's need for deterministic system behavior under ties as requiring system to handle multiple user actions that occur at the same time.
+
+Derived Constraint: 
+
+The system must explicitly handle simultaneous user actions (different users) including registrations, cancellations and queries in a deterministic order
+
+Current Support Level:
+
+Not supported by Lab 8
+
+C7
+
+Persona: Jane
+
+Persona attribute: Predictable and stable ordering of reminders or system decisions
+
+
+
+Attribute type: Need
+
+Operationalization: Converted into Constraint.  Interpreted Jane's need for Predictable and stable ordering of system decisions as requiring system to handle multiple user actions for same user that occur at the same time in a deterministic order
+
+Derived Constraint: 
+
+The system must explicitly handle simultaneous user actions (same user id) including registrations, cancellations and queries in a deterministic order
+
+Current Support Level:
+
+Not supported by Lab 8
+
+
+C8
+Persona: Jane
+
+Persona attribute: Limited notification or information overload
+
+
+
+Attribute type: Need
+
+Operationalization: Converted into Constraint.  Interpreted Jane's need to avoid information overload as requiring the system to emit only one concise result per processed action
+
+Derived Constraint: 
+
+The system shall produce at most one output message per processed user action and shall not emit duplicate messages for the same outcome
+
+Current Support Level:
+
+Partially supported by Lab 8
+---
+## 5. Acceptance Criteria - Acceptance criteria define how system
+behavior will be verified.
+
+AC1:
+
+Given: Number of registered users is equal to capacity (capacity is greater than 0), and users are on the waitlist
+When: A registered user is cancelled
+Then: system shall remove the earliest waitlisted user from the waitlist and into the registered users list, without asking operator for any further input
+
+Linked Constraint ID(s): C1
+
+AC2:
+
+Given: Number of registered users is equal to capacity, and users are on the waitlist
+When: A registered user is cancelled
+Then: The system shall show which user was promoted from waitlist and why
+
+Linked Constraint ID(s): C2
+
+AC3:
+
+Given: At least one user is on the waitlist
+When: When a registered user cancels
+Then: system shall output a message explaining which user cancelled, which user was promoted in under 100 characters
+
+Linked Constraint ID(s): C3
+
+AC4:
+
+Given: A user is registered or on the waitlist
+When: A operator attempts to register user with the same name
+Then: System shall output a message explaining that user was not registered since user with same ID has been registered
+
+Linked Constraint ID(s): C4
+
+AC5
+
+Given: Capacity is set to 0 for EventRegistration
+
+When: There is a user registration attempt
+
+Then: Place the user on the waitlist, maintaining FIFO ordering
+
+Linked Constraint ID(s): C5
+
+
+
+AC6
+
+
+Given: Two or more user requests (different user_ids) arrive at the same timestamp
+
+When: The system processes those requests
+
+Then: The system shall process the requests in lexicographic order using the ASCII values of the characters in their user id
+
+Linked Constraint ID(s): C6
+
+
+
+
+AC7
+
+Given: Two or more user requests (with same user_id) arrive at the same timestamp
+
+When: The system processes those requests
+
+Then: The system shall process the requests in order according to the following priority: Registration, Cancellation, Query
+
+Linked Constraint ID(s): C7
+
+AC8
+
+Given: A user performs a single system action
+
+When: The system completes processing of that action
+
+Then: The system shall generate at most one output message describing the outcome of the action and no additional or repeated messages
+
+Linked Constraint ID(s): C8
+
+---
+## 6. Edge Cases - Describe unusual or boundary situations the system
+must handle.
+EC1:
+
+Description: Attempt to register a user already in the system. System throws a DuplicateRequest Error with explanation of error included
+Linked Constraint ID(s): C#4
+Covered by Acceptance Criteria ID(s): AC#4
+
+EC2:
+Description: Capacity of Event Registration Event set to 0. All users that attempt to register at any time are put on waitlist
+Linked Constraint ID(s): C#6
+Covered by Acceptance Criteria ID(s): AC#6
+
+EC3:
+Description: Multiple users attempt to register for full capacity event simultaneously, users are added to waitlist in lexicographic order of their user_id
+Linked Constraint ID(s): C#6
+Covered by Acceptance Criteria ID(s): AC#6
+
+EC4:
+
+Description: Two users attempt to register for event with one spot left simultaneously.  Users are serviced in lexicographic order of their user_id, with first user going to registered list and second user going to waitlist
+Linked Constraint ID(s): C#6
+Covered by Acceptance Criteria ID(s): AC#6
+
+EC5:
+
+Description: Multiple users attempt to register for event that has enough capacity left to accommodate all users. Users are added to the registered list in lexicographic order of their user_id
+Linked Constraint ID(s): C#6
+Covered by Acceptance Criteria ID(s): AC#6
+
+EC6:
+
+Description: Multiple users on waitlist cancel at the same time. Users are removed from the waitlist in lexicographic order of their user_id, maintaining FIFO ordering of the list 
+Linked Constraint ID(s): C#6
+Covered by Acceptance Criteria ID(s): AC#6
+
+EC7:
+
+Description: Multiple users on registered list cancel at the same time. Users are removed from in lexicographic order of their user_id, maintaining FIFO ordering of the list. Users on waitlist are promoted in FIFO order
+Linked Constraint ID(s): C#6
+Covered by Acceptance Criteria ID(s): AC#6
+
+EC8:
+
+Description: User 1 is earliest on waitlist when one user on registered list cancels and another user registers at same timestamp. Users who made request at same time are serviced in lexicographic order of their user_ids. If user who cancelled is first: First user is cancelled, then user 1 is promoted to registered list, then user who registered is put on end of waitlist. If user who registered is first then that user will be placed at end of waitlist, then user who cancelled will be removed from registered list, and lastly user 1 will be promoted.
+Linked Constraint ID(s): C#6
+Covered by Acceptance Criteria ID(s): AC#6
+
+EC9:
+
+Description: User is registered. System receives cancellation and query for that same user (same user_id) at same timestamp. User is removed from registered list, then query will return status of none
+Linked Constraint ID(s): C#7
+Covered by Acceptance Criteria ID(s): AC#7
+
+
+EC10: 
+
+Description: System message output would be more than 100 characters long because user id is too long. Any system message output will accommodate 8 characters for username while keeping the message to at most 100 characters. Use only first 8 letters of username.
+Linked Constraint ID(s): C#3
+Covered by Acceptance Criteria ID(s): AC#3
+---
+## 7. Traceability - Link functional requirements to constraints and
+acceptance criteria.
+ FR16 → C6 → AC6
+ FR17 → C6 → AC6
+ FR18 → C2 → AC2
+ FR19 → C7 → AC7
+ FR20 → C7 → AC7
+
+Revision Notes:
