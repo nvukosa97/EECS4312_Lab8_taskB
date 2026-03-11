@@ -1799,8 +1799,359 @@ Response Summary: Provided solutions.py code to meet updated requirements
 
 Decision: Passed all original test cases, keeping for now. Need to add test cases
 
+#############################
+LAB 9
+#############################
+
+Prompt 1: [I am presenting you a  • a short description of the system I am building: building a Python event registration module for a single fixed-capacity event that manages confirmed registrations and a FIFO waitlist. It registers users until capacity is full, adds extra users to the waitlist, automatically promotes the earliest waitlisted user when a spot opens, prevents duplicate entries, and lets users check their status. The system must always keep state consistent, never exceed capacity, preserve deterministic waitlist behavior, and correctly handle edge cases like zero capacity, repeated cancellations, re-registration, waitlist withdrawals, and rapid consecutive operations• the personas (Jane and Mo)PERSONA 1 - Jane Adams (Primary User)
+Context. Busy professional managing daily routines and commitments who relies on
+automation to reduce cognitive load. Jane uses digital tools for medication reminders
+and event registrations and expects them to work reliably without manual oversight.
+Behaviors.
+• Acts quickly and rarely revisits system suggestions.
+• Trusts the system to resolve conflicts and enforce rules automatically.
+• Prefers concise outputs and minimal interaction when making decisions.
+Needs.
+• Predictable and stable ordering of reminders or system decisions.
+• Automatic handling of conflicts (e.g., reminder collisions or waitlist promotion).
+• Limited notification or information overload.
+Pain Points.
+• Receiving too many notifications or duplicate system messages.
+• Systems behave inconsistently in similar situations.
+• Having to manually resolve conflicts or check system correctness.
+PERSONA 2 – Mo Rodriguez (Edge User)
+Context. User with accessibility needs & heightened sensitivity to uncertainty. Mo relies
+on explicit explanations and consistent behavior to build trust in automated systems.
+Behaviors.
+• Carefully reviews outputs and seeks explanations for system decisions.
+• Performs frequent updates (e.g., snoozing reminders or cancelling
+registrations).
+• Experiences stress when outcomes appear arbitrary or unexplained.
+Needs.
+• Deterministic system behavior under ties or conflicting conditions.
+• Clear explanations when reminders are moved, skipped, or when waitlist
+promotions occur.
+• Explicitly handle edge cases instead of silent failure.
+Pain Points.
+• Not understanding why the system changed or rejected an action.
+• Silent failures or dropped reminders/requests.
+• Inconsistent responses across repeated or boundary scenarios. • the constraints derived from the personas C1
+
+Persona: Jane 
+
+Persona attribute:
+
+Automatic handling of conflicts (e.g., reminder collisions or waitlist promotion).
+
+Attribute type:
+
+Need
+
+Operationalization:
+
+Converted into constraint. Interpret "automatic handling of conflicts" as the system resolving waitlist promotions automatically without requiring user intervention
+
+Derived Constraint:
+
+The system must automatically handle waitlist promotion without asking user for input
+
+Current Support Level:
+
+Fully supported by Lab 8 System
+
+C2
+
+Persona:
+
+Mo Rodriguez
+
+Persona attribute:
+
+Carefully reviews outputs and seeks explanations for system decisions
+
+Attribute type:
+
+Behaviour
+
+Operationalization:
+
+Converted into constraint. Interpret Mo's need to review outputs and seek explanations as requiring the system to provide explicit explanations for automated waitlist promotions
+
+Derived Constraint:
+
+The system shall show which user was promoted from waitlist and which user was removed from system when a waitlist promotion occurs
+
+Current Support Level:
+
+Not supported by Lab 8 System
+
+C3
+
+Persona:
+
+Jane
+
+Persona attribute:
 
 
+Prefers concise outputs and minimal interaction when making decisions
+
+Attribute type:
+
+Behaviour
+
+Operationalization:
+
+Converted into constraint. Interpret Jane's preference for concise output as requiring system to present only essential information
+
+Derived Constraint:
+
+The system shall only output messages with essential information using at most 100 characters
+
+Current Support Level:
+
+Partially supported by Lab 8 System
+
+
+
+C4
+
+Persona:
+
+Mo
+
+Persona attribute:
+
+
+
+Not understanding why the system changed or rejected an action
+
+Attribute type:
+
+Pain Point
+
+Operationalization:
+
+Converted into constraint. Interpret Mo's frustration with unexplained system behaviour as requiring the system to provide explicit explanations whenever user action is rejected/modified.
+
+Derived Constraint:
+
+The system shall provide an explanation whenever a user action (registration, cancellation, or query) was rejected
+
+Current Support Level:
+
+Fully Supported by Lab 8
+
+
+
+C5
+
+Persona: Mo
+
+Persona attribute: Explicitly handle edge cases instead of silent failure. 
+
+
+
+Attribute type: Need
+
+Operationalization: Converted into Constraint.  Interpreted Mo's need for system to explicitly handle edge cases as requiring system to handle capacity of 0.
+
+Derived Constraint: 
+
+The system must explicitly handle capacity set to 0 by placing users on waitlist and preventing registration
+
+Current Support Level:
+
+Fully supported by Lab 8
+
+C6
+
+Persona: Mo
+
+Persona attribute: Deterministic system behavior under ties or conflicting conditions.
+
+
+
+Attribute type: Need
+
+Operationalization: Converted into Constraint.  Interpreted Mo's need for deterministic system behavior under ties as requiring system to handle multiple user actions that occur at the same time.
+
+Derived Constraint: 
+
+The system must explicitly handle simultaneous user actions (different users) including registrations, cancellations and queries in a deterministic order
+
+Current Support Level:
+
+Not supported by Lab 8
+
+C7
+
+Persona: Jane
+
+Persona attribute: Predictable and stable ordering of reminders or system decisions
+
+
+
+Attribute type: Need
+
+Operationalization: Converted into Constraint.  Interpreted Jane's need for Predictable and stable ordering of system decisions as requiring system to handle multiple user actions for same user that occur at the same time in a deterministic order
+
+Derived Constraint: 
+
+The system must explicitly handle simultaneous user actions (same user id) including registrations, cancellations and queries in a deterministic order
+
+Current Support Level:
+
+Not supported by Lab 8
+
+
+C8
+Persona: Jane
+
+Persona attribute: Limited notification or information overload
+
+
+
+Attribute type: Need
+
+Operationalization: Converted into Constraint.  Interpreted Jane's need to avoid information overload as requiring the system to emit only one concise result per processed action
+
+Derived Constraint: 
+
+The system shall produce at most one output message per processed user action and shall not emit duplicate messages for the same outcome
+
+Current Support Level:
+
+Partially supported by Lab 8
+
+
+• the acceptance criteria for the system AC1:
+
+Given: Number of registered users is equal to capacity (capacity is greater than 0), and users are on the waitlist
+When: A registered user is cancelled
+Then: system shall remove the earliest waitlisted user from the waitlist and into the registered users list, without asking operator for any further input
+
+Linked Constraint ID(s): C1
+
+AC2:
+
+Given: Number of registered users is equal to capacity, and users are on the waitlist
+When: A registered user is cancelled
+Then: The system shall show which user was promoted from waitlist and why
+
+Linked Constraint ID(s): C2
+
+AC3:
+
+Given: At least one user is on the waitlist
+When: When a registered user cancels
+Then: system shall output a message explaining which user cancelled, which user was promoted in under 100 characters
+
+Linked Constraint ID(s): C3
+
+AC4:
+
+Given: A user is registered or on the waitlist
+When: A operator attempts to register user with the same name
+Then: System shall output a message explaining that user was not registered since user with same ID has been registered
+
+Linked Constraint ID(s): C4
+
+AC5
+
+Given: Capacity is set to 0 for EventRegistration
+
+When: There is a user registration attempt
+
+Then: Place the user on the waitlist, maintaining FIFO ordering
+
+Linked Constraint ID(s): C5
+
+
+
+AC6
+
+
+Given: Two or more user requests (different user_ids) arrive at the same timestamp
+
+When: The system processes those requests
+
+Then: The system shall process the requests in lexicographic order using the ASCII values of the characters in their user id
+
+Linked Constraint ID(s): C6
+
+
+
+
+AC7
+
+Given: Two or more user requests (with same user_id) arrive at the same timestamp
+
+When: The system processes those requests
+
+Then: The system shall process the requests in order according to the following priority: Registration, Cancellation, Query
+
+Linked Constraint ID(s): C7
+
+AC8
+
+Given: A user performs a single system action
+
+When: The system completes processing of that action
+
+Then: The system shall generate at most one output message describing the outcome of the action and no additional or repeated messages
+
+Linked Constraint ID(s): C8
+
+Functional requirements: 
+1. The system shall register a user for the event if the total number of users registered for the event is below capacity.
+
+2. The system shall place a user on the waitlist if attempted registration for that user occurs when the total number of users registered for the event is at capacity
+
+3. The system shall accept a capacity greater than or equal to 0
+
+4. The system shall allow operator to cancel a user: remove the user if they are registered or remove the user from waitlist if they are on the waitlist
+
+5. The system shall promote the earliest waitlisted user when a registered user cancels.
+
+6. The system shall allow user to query their current status
+
+7. The system shall report the 1-based position of user on the waitlist when a waitlisted user queries their status
+
+8. The system shall maintain first-in, first-out ordering in the waitlist.
+
+9. The system shall maintain first-in, first-out ordering in the registered users list according to the time they were added to the registered users list
+
+10. The system must ensure the number of registered users never exceeds capacity.
+
+11. The system shall service users in the order their requests arrived in.
+
+12. The system must produce the same final state given the same sequence of operations
+
+13. The system shall reject a registration request if the user is already registered or already on the waitlist (case-insensitive user_id)
+
+14. If a cancellation is requested for a user who is neither registered or on the waitlist, the system shall prevent this operation 
+
+15. The system must prevent change to capacity after initialization
+
+---------------------------------------------------- Requirements from constraints
+
+16. The system shall service simultaneous user requests (same timestamp, different user ids) in lexicographic order using the ASCII values of their user_id 
+
+17. The system shall service simultaneous user requests (same timestamp, same user ids) in order of following priority: Registration, Cancellation, Query
+
+18. The system shall show which user was promoted from waitlist and which user was removed from system when a waitlist promotion occurs
+
+19.  The system shall return query results that reflect the system state after all earlier simultaneous requests in the deterministic processing order and before any later simultaneous requests
+
+20.  The system shall produce the same registered list, waitlist, and outputs for any identical initial state (capacity) and identical sequence of requests, including simultaneous requests
+
+
+
+
+ Please review the specification and identify possible issues such as: • missing constraints • ambiguous requirements • unhandled edge cases]
+Response summary: [Provided several ambiguities that should be addressed]
+Decision: Accepted several of the modifications including adjusting FR11 to clarify when to use time arrival ordering of requests and lexicographic ordering. Also added suggested edge case.
 
 
 

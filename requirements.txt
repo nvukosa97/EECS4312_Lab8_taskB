@@ -35,6 +35,8 @@ must perform.
 
 **Assuming we only have to include new functional requirements derived from constraints (rest of FRs in form)
 
+FR11: The system shall service user requests in chronological order based on their timestamp. Requests with identical timestamps shall be processed according to the deterministic ordering rules defined in FR16 and FR17
+
 FR16. The system shall service simultaneous user requests (same timestamp, different user ids) in lexicographic order using the ASCII values of their 
 
 FR17. The system shall service simultaneous user requests (same timestamp, same user ids) in order of following priority: Registration, Cancellation, Query
@@ -318,6 +320,16 @@ Then: The system shall generate at most one output message describing the outcom
 
 Linked Constraint ID(s): C8
 
+AC9
+
+Given: The event has capacity 1 and currently has 0 registered users.
+
+When: Two registration requests arrive at the same timestamp from users "Bob" and "Alice"
+
+Then: The system shall process the requests in lexicographic order of their user_id, registering Alice and placing Bob on the waitlist.
+
+Linked Constraint ID(s): C6
+
 ---
 ## 6. Edge Cases - Describe unusual or boundary situations the system
 must handle.
@@ -389,3 +401,14 @@ acceptance criteria.
  FR20 → C7 → AC7
 
 Revision Notes:
+
+Revision Note 1
+Requirement updated: FR11 (found in form) changed from  "The system shall service users in the order their requests arrived in" to "The system shall service user requests in chronological order based on their timestamp. Requests with identical timestamps shall be processed according to the deterministic ordering rules defined in FR16 and FR17"
+Reason: During requirement review the LLM identified ambiguity in how requests are processed (arrival time vs deterministic)
+Action: Clarified using arrival time for prioritizing actions and using deterministic rule for breaking ties
+
+Revision Note 2
+
+Update: Added AC9
+Reason: During requirement review LLM identified need for acceptance criteria to fully test C6
+Action: Clarified how simultaneous registration of 2 different users should be handled when capacity is 1 and 0 users are registered
